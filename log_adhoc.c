@@ -80,28 +80,31 @@ typedef struct {
     int     dt_usec;			/* make sure it's signed */
 } DELTA_TIME;
 
-#include "mongoc.h"
+/* log_adhoc - ad-hoc logging */
+
+#include <mongoc.h>
 #include <stdio.h>
-//杩斿洖褰㈠  2014-09-02 19:12:25 褰撳墠鏃堕棿    -1 琛ㄧず澶辫触  鍏朵粬鎴愬姛
+
+//返回形如  2014-09-02 19:12:25 当前时间    -1 表示失败  其他成功
 int getDate(char *date)
 {
 	time_t timep;
 	struct tm *p;
 
-	//鍙栧緱褰撳墠鏃堕棿
+	//取得当前时间
 	time(&timep);
 
 	p = localtime(&timep);
 	return sprintf(date, "%d-%02d-%02d %02d:%02d:%02d", (1900 + p->tm_year), (1 + p->tm_mon), p->tm_mday, p->tm_hour, p->tm_min, p->tm_sec);
 }
 
-//璁板綍鍒癿ongodb涓�
+//记录到mongodb中
 void log_api_record(const char *id, const char *recipient, const char *status, const char *dsn_status, const char *reason)
 {
-	//娣诲姞鏃堕棿
+	//添加时间
 	char add_time[20] = {0};
 
-	//mongodb 閰嶇疆
+	//mongodb 配置
 	int api_record_enabled = 0;
 	char *mongodb_host = NULL;
 	int mongodb_port = 0;
@@ -150,8 +153,6 @@ void log_api_record(const char *id, const char *recipient, const char *status, c
 	myfree(mongodb_host);
 }
 
-
-/* log_adhoc - ad-hoc logging */
 
 void    log_adhoc(const char *id, MSG_STATS *stats, RECIPIENT *recipient,
 		          const char *relay, DSN *dsn,
@@ -286,6 +287,6 @@ void    log_adhoc(const char *id, MSG_STATS *stats, RECIPIENT *recipient,
      */
     msg_info("%s", vstring_str(buf));
 
-        //log_api_record
+    //log_api_record
     log_api_record(id, recipient->address, status, dsn->status, dsn->reason);
 }
