@@ -15,25 +15,35 @@
 
 // module id
 enum {
-	SID_COMMAND			= 0x0001,
-	SID_MSG 			= 0x0002,
-	SID_OTHER 			= 0x0003,
+	SID_COMMAND			= 1,
+	SID_MSG 			= 2,
+	SID_OTHER 			= 3,
 };
 
 //command id for command
 enum {
-	CID_COMMAND_START			= 1 << 0, //start
-	CID_COMMAND_STOP			= 1 << 1, //stop
-	CID_COMMAND_PAUSE			= 1 << 2, //pause
-	CID_COMMAND_RESUME			= 1 << 3, //resume
+	CID_COMMAND_START				= 1 << 0, //start
+	CID_COMMAND_STOP				= 1 << 1, //stop
+	CID_COMMAND_PAUSE				= 1 << 2, //pause
+	CID_COMMAND_RESUME				= 1 << 3, //resume
+	CID_COMMAND_ADJUST_RATE  		= 1 << 4, //adjust rate
 };
 
 //command id for msg
 enum {
-	CID_MSG_TEST 			= 1,
-	CID_MSG_DATA			= 2,
-	CID_MSG_ADJUST_RATE  	= 3,
+	CID_MSG_DATA					= 1,
+	CID_MSG_SERVER_STATUS_INFO 		= 2,
+	CID_MSG_ALL_CLIENT_STATUS_INFO	= 3,
 };
+
+
+//command id for other
+enum {
+	CID_OTHER_HEARTBEAT			= 1, //心跳
+	CID_OTHER_RESPONSE			= 2, //返回响应
+	CID_OTHER_REG_CLIENT_TYPE 	= 3, //注册客户端类型   如PHP管理端   c++客户端
+};
+
 
 
 #define PARSE_PACKET_ASSERT if (is.GetPos() != (len - IM_PDU_HEADER_LEN)) { \
@@ -118,8 +128,9 @@ public:
 	static int ReadPduHeader(uchar_t* buf, uint32_t len, PduHeader_t* header);
 	static CImPdu* ReadPdu(uchar_t* buf, uint32_t len);
 private:
+	static CImPdu* ReadPduCommand(uint16_t command_id, uchar_t* pdu_buf, uint32_t pdu_len);
 	static CImPdu* ReadPduMsg(uint16_t command_id, uchar_t* pdu_buf, uint32_t pdu_len);
-
+	static CImPdu* ReadPduOther(uint16_t command_id, uchar_t* pdu_buf, uint32_t pdu_len);
 
 	static bool _IsPduAvailable(uchar_t* buf, uint32_t len, uint32_t& pdu_len);
 	void _SetIncomingLen(uint32_t len) { m_incoming_len = len; }

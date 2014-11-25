@@ -42,6 +42,10 @@ int netlib_close(net_handle_t handle);
 
 int netlib_option(net_handle_t handle, int opt, void* optval);
 
+int netlib_register_timer(callback_t callback, void* user_data, uint64_t interval);
+
+int netlib_delete_timer(callback_t callback, void* user_data);
+
 void netlib_eventloop();
 
 #ifdef __cplusplus

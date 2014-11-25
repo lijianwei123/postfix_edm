@@ -1,22 +1,18 @@
 CC = g++
 
-OPT = -Wall -Wno-deprecated -g
+OPT = -Wall -Wno-deprecated -g -DDEBUG -lpthread `mysql_config --libs`
 
 SrcDir = .
 SRCS = $(foreach dir,$(SrcDir),$(wildcard $(dir)/*.cpp))
-OBJS = $(SRCS:%.cpp=%.o) 
+OBJS = $(SRCS:%.cpp=%.o) cJSON.o  prename.o mysql.o 
 
 LIBBASE = libbase.a 
-PRELIB = libprename.a
 
-all: $(LIBBASE) $(PRELIB)
+all: $(LIBBASE)
 
 $(LIBBASE): $(OBJS)
 	ar -r $@ $(OBJS)
 
-$(PRELIB):prename.o
-	ar -r $@ $^
-	
 %.o:%.cpp
 	$(CC) $(OPT) -c $< -o $@ 
 %.o:%.c

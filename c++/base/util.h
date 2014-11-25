@@ -6,6 +6,7 @@
 //use boost
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
+
 using namespace boost;
 
 #include "ostype.h"
@@ -13,12 +14,16 @@ using namespace boost;
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <libgen.h> //dirname
+
+#include <iconv.h>  //编码转换
 
 #include <stdarg.h>
 #include <pthread.h>
 #include <signal.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 
 
 #include <assert.h>
@@ -29,7 +34,20 @@ using namespace boost;
 #include <sys/shm.h>
 
 
+//为了获取本机ip
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+
+//解析json字符串
+#include "json/json.h"
+
 #include "mysql.h"
+#include "cJSON.h"
+#include "prename.h"
+
+#include "base64.h"
 
 
 
@@ -58,16 +76,14 @@ class CProcess
 public:
 	CProcess();
 	virtual ~CProcess();
-	pid_t forkChild();
-	virtual void child() = 0;
+	pid_t CreateChild() throw(CProcessException);
+	virtual void OnChildRun() = 0;
 
 	pid_t getCid(){return _cid;}
 private:
 	pid_t _cid;
 };
 
-//检测线程是否还活着   @see http://blog.csdn.net/echoisland/article/details/6398081
-bool checkThreadAlive(pthread_t tid);
 
 class CThread
 {
@@ -79,59 +95,65 @@ public:
 	virtual pthread_t CreateThread(void);
 	virtual void OnThreadRun(void) = 0;
 
+public:
+	//检测线程是否还活着   @see http://blog.csdn.net/echoisland/article/details/6398081
+	static bool checkThreadAlive(pthread_t tid);
+
 protected:
 	pthread_t	m_thread_id;
 };
 
-class CThreadLock
-{
-public:
-	CThreadLock();
-	~CThreadLock();
-	void Lock(void);
-	void Unlock(void);
-protected:
-	pthread_mutex_t 	m_mutex;
-private:
-	pthread_mutexattr_t	m_mutexattr;
-};
-
 //@see http://www.cnblogs.com/zhangchaoyang/articles/2302085.html
 //@see http://baike.baidu.com/view/5725833.htm?fr=aladdin
-class CThreadCondLock : public CThreadLock
+struct CThreadLock
 {
-public:
-	CThreadCondLock();
-	~CThreadCondLock();
+	pthread_mutex_t 	m_mutex;
+	pthread_mutexattr_t	m_mutexattr;
 
-	void wait();
-	void timedWait(struct timespec *outtime);
-	void notify();
-	void notifyAll();
-
-
-private:
 	pthread_cond_t cond;
-};
+	pthread_condattr_t cond_attr;
 
-class CFuncLock
-{
-public:
-	CFuncLock(CThreadLock* lock) 
-	{ 
-		m_lock = lock; 
-		if (m_lock)
-			m_lock->Lock(); 
+	void Lock(void)
+	{
+		pthread_mutex_lock(&m_mutex);
 	}
 
-	~CFuncLock() 
-	{ 
-		if (m_lock)
-			m_lock->Unlock(); 
+	void Unlock(void)
+	{
+		pthread_mutex_unlock(&m_mutex);
 	}
-private:
-	CThreadLock*	m_lock;
+
+	void wait()
+	{
+		pthread_cond_wait(&cond, &m_mutex);
+	}
+
+	void timedWait(struct timespec *outtime)
+	{
+		if (outtime == NULL) {
+			struct timespec spec;
+			spec.tv_sec = time(NULL) + 1;
+			spec.tv_nsec = 0;
+			outtime = &spec;
+		}
+		pthread_cond_timedwait(&cond, &m_mutex, outtime);
+	}
+
+	void notify()
+	{
+		pthread_cond_signal(&cond);
+	}
+
+	void notifyAll()
+	{
+		pthread_cond_broadcast(&cond);
+	}
 };
+
+
+void create_thread_lock(struct CThreadLock *lock);
+
+void destory_thread_lock(struct CThreadLock *lock);
 
 class CRefObject
 {
@@ -155,6 +177,17 @@ T *getInstance()
 	return &instance;
 }
 
+extern const char *LOG_FILE_NAME;
+
+#define LOG_APPEND_NAME(new_log_name)	\
+	char *clone1 = strdup(LOG_FILE_NAME);	\
+	char *clone2 = strdup(LOG_FILE_NAME);	\
+	char *p1 = strrchr(clone1, '.');	\
+	char *p2 = strrchr(clone2, '.');	\
+	*p1 = '\0';	\
+	sprintf(new_log_name, "%s_%d.%s", clone1, file_no, ++p2); \
+	free(clone1);	\
+	free(clone2);
 
 #define log(fmt, args...)  logger("<%s>|<%d>|<%s>," fmt, __FILE__, __LINE__, __FUNCTION__, ##args)
 
@@ -164,21 +197,6 @@ void logger(const char* fmt, ...);
 uint64_t get_tick_count();
 void util_sleep(uint32_t millisecond);
 
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-//rtrim
-char *strtrimr(char *pstr);
-//ltrim
-char *strtriml(char *pstr);
-//trim
-char *strtrim(char *pstr);
-
-#ifdef __cplusplus
-}
-#endif
 
 class CStrExplode
 {
@@ -192,5 +210,50 @@ private:
 	uint32_t	m_item_cnt;
 	char** 		m_item_list;
 };
+
+
+//编码转换  @see http://jazka.blog.51cto.com/809003/231917
+class CodeConverter
+{
+private:
+	iconv_t cd;
+public:
+	// 构造
+	CodeConverter(const char *from_charset,const char *to_charset)
+	{
+		cd = iconv_open(to_charset,from_charset);
+	}
+
+	// 析构
+	~CodeConverter()
+	{
+		iconv_close(cd);
+	}
+
+	//转换输出
+	int convert(char *inbuf, int inlen, char *outbuf, int outlen)
+	{
+		char **pin = &inbuf;
+		char **pout = &outbuf;
+
+		memset(outbuf, 0, outlen);
+		return iconv(cd, pin, (size_t *)&inlen, pout, (size_t *)&outlen);
+	}
+};
+
+//剔除换行符
+char *stripLineSep(char *str);
+
+//获取本机ip
+char *getLocalIp();
+
+pid_t getParentProcessIdByChildId(pid_t childId);
+
+//设置daemon
+void setDaemon(char *log_file);
+
+bool is_dir(const char *filePath);
+
+char *getExtension(const char *path);
 
 #endif

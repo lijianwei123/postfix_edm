@@ -19,8 +19,6 @@ extern "C" {
 #include <math.h>
 
 #include <mysql/mysql.h>
-
-#include "util.h"
 #include "cJSON.h"
 
 
@@ -50,7 +48,7 @@ typedef struct {
 } result_data_t;
 
 //链接数据库
-int mysql_connect(MYSQL *conn_ptr, mysql_connect_info_t *mysql_connect_info_ptr);
+int mysql_user_connect(MYSQL *conn_ptr, mysql_connect_info_t *mysql_connect_info_ptr);
 
 //执行写操作
 int mysql_execute(MYSQL *conn_ptr, char *sql, unsigned long *result);
@@ -63,7 +61,7 @@ int mysql_select(MYSQL *conn_ptr, char *sql, result_data_t *result_data_ptr);
 void free_result_data(result_data_t *result_data_ptr);
 
 //初始连接信息
-inline void  mysql_connection_info_init(mysql_connect_info_t *mysql_connection_info_ptr);
+void  mysql_connection_info_init(mysql_connect_info_t *mysql_connection_info_ptr);
 
 //mysql 数据集 result_data_t 转换为json输出
 char * mysql_result_data_convert_json(result_data_t *result_data_ptr);

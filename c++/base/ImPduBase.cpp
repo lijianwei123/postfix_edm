@@ -90,8 +90,14 @@ CImPdu* CImPdu::ReadPdu(uchar_t *buf, uint32_t len)
 
 	switch (service_id)
 	{
+	case SID_COMMAND:
+		pPdu = ReadPduCommand(command_id, buf, pdu_len);
+		break;
 	case SID_MSG:
 		pPdu = ReadPduMsg(command_id, buf, pdu_len);
+		break;
+	case SID_OTHER:
+		pPdu = ReadPduOther(command_id, buf, pdu_len);
 		break;
 	default:
 		throw CPduException(service_id, command_id, ERROR_CODE_WRONG_SERVICE_ID, "wrong service id");
@@ -102,14 +108,38 @@ CImPdu* CImPdu::ReadPdu(uchar_t *buf, uint32_t len)
 	return pPdu;
 }
 
+CImPdu* CImPdu::ReadPduCommand(uint16_t command_id, uchar_t* pdu_buf, uint32_t pdu_len)
+{
+	CImPdu* pPdu = NULL;
+	switch (command_id) {
+	case CID_COMMAND_START:
+	case CID_COMMAND_STOP:
+	case CID_COMMAND_PAUSE:
+	case CID_COMMAND_RESUME:
+		pPdu = new CImPduServerCommand(pdu_buf, pdu_len);
+		break;
+	case CID_COMMAND_ADJUST_RATE:
+		pPdu = new CImPduAdjustRate(pdu_buf, pdu_len);
+		break;
+	default:
+		throw CPduException(SID_COMMAND, command_id, ERROR_CODE_WRONG_COMMAND_ID, "wrong command id");
+	}
 
+	return pPdu;
+}
 
 CImPdu* CImPdu::ReadPduMsg(uint16_t command_id, uchar_t* pdu_buf, uint32_t pdu_len)
 {
 	CImPdu* pPdu = NULL;
 	switch (command_id) {
-	case CID_MSG_TEST:
-		pPdu = new CImPduClientTestData(pdu_buf, pdu_len);
+	case CID_MSG_DATA:
+		pPdu = new CImPduClientData(pdu_buf, pdu_len);
+		break;
+	case CID_MSG_SERVER_STATUS_INFO:
+		pPdu = new CImPduServerStatusInfo(pdu_buf, pdu_len);
+		break;
+	case CID_MSG_ALL_CLIENT_STATUS_INFO:
+		pPdu = new CImPduAllClientStatusInfo(pdu_buf, pdu_len);
 		break;
 	default:
 		throw CPduException(SID_MSG, command_id, ERROR_CODE_WRONG_COMMAND_ID, "wrong command id");
@@ -118,6 +148,27 @@ CImPdu* CImPdu::ReadPduMsg(uint16_t command_id, uchar_t* pdu_buf, uint32_t pdu_l
 	return pPdu;
 }
 
+CImPdu* CImPdu::ReadPduOther(uint16_t command_id, uchar_t* pdu_buf, uint32_t pdu_len)
+{
+	CImPdu* pPdu = NULL;
+	switch (command_id)
+	{
+	case CID_OTHER_HEARTBEAT:
+		pPdu = new CImPduHeartbeat(pdu_buf, pdu_len);
+		break;
+	case CID_OTHER_RESPONSE:
+		pPdu = new CImPduResponse(pdu_buf, pdu_len);
+		break;
+	case CID_OTHER_REG_CLIENT_TYPE:
+		pPdu = new CImPduRegClientType(pdu_buf, pdu_len);
+		break;
+	default:
+		throw CPduException(SID_OTHER, command_id, ERROR_CODE_WRONG_COMMAND_ID, "wrong packet type");
+		return NULL;
+	}
+
+	return pPdu;
+}
 
 
 bool CImPdu::_IsPduAvailable(uchar_t* buf, uint32_t len, uint32_t& pdu_len)

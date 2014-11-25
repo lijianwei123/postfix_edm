@@ -12,15 +12,72 @@
 #include "sendMail.h"
 #include "clientConn.h"
 
-extern shared_ptr<CThreadCondLock> condLock;
+//拉取数量
+#define PULL_SENT_MAIL_UNIT 1000
+//子进程检查间隔
+#define CHECK_PROCESSNUM_INTERVAL  30
+//检测是否有新的邮件待发送
+#define CHECK_MAIL_DATA_INTERVAL   30
+
+#define COMMAND_TO_ENUM(command) CID_COMMAND_##command
+
+#define INIT_RDONLY_SHMAT INIT_SHMAT(SHM_RDONLY)
+
+#define INIT_SHMAT(mode)	\
+shm_shared_t *shm_ptr = (shm_shared_t *)shmat(shm_id, NULL, mode); \
+if ((int)shm_ptr == -1) { \
+	log("shmat error:%s\n", strerror(errno)); \
+	exit(EXIT_FAILURE); \
+}
+
+#define CHECK_CAN_START(shm_ptr) \
+shm_ptr->status & COMMAND_TO_ENUM(START) || shm_ptr->status & COMMAND_TO_ENUM(RESUME)
+
+#define COND_LOCK_NOTIFY(cond)	\
+cond.Lock();	\
+cond.notify();	\
+cond.Unlock();
+
+#define COND_LOCK_NOTIFYALL(cond)	\
+cond.Lock();	\
+cond.notifyAll();	\
+cond.Unlock();
+
 extern mysql_connect_info_t  mysql_connect_info;
+extern char *emailFromAddr;
+extern int changeProcessName;
+extern int isDaemon;
+
+class cChildProcess;
 
 typedef struct {
-	queue<mail_info_t *> *email_queue_ptr;
-	CThreadCondLock *condLock;
-	cWorker *worker;
+	uint16_t status;
+	uint16_t multi;
+	uint16_t delay;
+
+	//条件锁
+	struct CThreadLock childLock;
+	struct CThreadLock commandLock;
+	struct CThreadLock productLock;
+	struct CThreadLock consumeLock;
 
 } shm_shared_t;
+
+extern 	shm_shared_t *shm_ptr;
+
+class cWorkerThread : public CThread
+{
+public:
+	cWorkerThread();
+	virtual ~cWorkerThread();
+	void OnThreadRun(void);
+
+private:
+	void _init_shm();
+	bool _haveSendInfo();
+	pid_t _forkMasterProcess();
+
+};
 
 class cWorker
 {
@@ -31,57 +88,29 @@ public:
 	void done();
 	void checkThreadAlive();
 
-	void setStatus(uint16_t status) { _status = status;}
+	void setStatus(uint16_t status);
 	uint16_t getStatus() { return _status;}
 
-	void setDelay(uint16_t delay) { _delay = delay;}
+	void setDelay(uint16_t delay);
 	uint16_t getDelay() { return _delay;}
 
-	void setCont(uint16_t cont) { _cont = cont;}
-	uint16_t getCont() { return _cont;}
-
+	void setMulti(uint16_t multi);
+	uint16_t getMulti() { return _multi;}
 
 private:
-	void _doProduct();
-	void _doConsume();
-
-
+	void _createThread();
 public:
-	thread_t workerThread[2];
+	shared_ptr<cWorkerThread> worker_thread_ptr;
+	pthread_t worker_thread_id;
 	static cWorker *instance;
 
 private:
 	uint16_t _status; //状态   start  stop  pause  resume
 	uint16_t _delay;  //延迟
-	uint16_t _cont;  //并发
+	uint16_t _multi;  //并发
 };
 
-//取邮件   生产者
-class cWorkerPullSentInfo : public CThread
-{
-public:
-	cWorkerPullSentInfo();
-	virtual ~cWorkerPullSentInfo();
 
-	virtual void OnThreadRun(void);
-
-protected:
-	void pullSentInfoFromMysql();
-
-};
-
-//发送邮件 消费者
-class cWorkerSendMail : public CThread
-{
-public:
-	cWorkerSendMail();
-	virtual ~cWorkerSendMail();
-
-	virtual void OnThreadRun(void);
-
-private:
-	pid_t _forkMasterProcess();
-};
 
 //多进程发送邮件
 class cMasterProcess : public CProcess
@@ -89,11 +118,10 @@ class cMasterProcess : public CProcess
 public:
 	cMasterProcess();
 	virtual ~cMasterProcess();
-	virtual void child();
-	virtual void signalHandler(int signalNo);
-
-private:
-	uint16_t childNum;
+	virtual void OnChildRun();
+public:
+	static hash_map<pid_t, shared_ptr<cChildProcess> > childProcessMap;
+	static uint16_t childNum;
 };
 
 class cChildProcess : public CProcess
@@ -101,12 +129,14 @@ class cChildProcess : public CProcess
 public:
 	cChildProcess();
 	virtual ~cChildProcess();
-	virtual void child();
-	virtual void signalHandler(int signalNo);
+	virtual void OnChildRun();
+	//自给自足
+	void pullSentInfoFromMysql();
 private:
 	cSendMail *_sendMail;
-	bool _quit;
-};
 
+	//队列
+	queue<mail_info_t *> send_mail_queue;
+};
 
 #endif /* WORKER_H_ */

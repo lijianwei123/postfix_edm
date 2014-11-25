@@ -3,6 +3,7 @@
 	<name>postfix_edm</name>
 	<comment></comment>
 	<projects>
+		<project>jsoncpp-src-0.5.0</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

@@ -11,6 +11,7 @@
 #include "netlib.h"
 #include "util.h"
 #include "impdu.h"
+#include "BaseSocket.h"
 
 #define SERVER_HEARTBEAT_INTERVAL	5000
 #define SERVER_TIMEOUT				30000

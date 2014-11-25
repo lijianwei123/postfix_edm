@@ -36,9 +36,14 @@ public:
 	cSendMail();
 	virtual ~cSendMail();
 
+	void setConvert(bool isConvert) { _isConvert = isConvert;}
+
 	int send(mail_info_t *mail_info_ptr);
 public:
 	static cSendMail *instance;
+private:
+	CodeConverter *_convert_ptr;
+	bool _isConvert;
 };
 
 #endif /* SENDMAIL_H_ */

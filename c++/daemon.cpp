@@ -24,7 +24,7 @@ int main(int argc, char **argv, char **envp)
 		return EXIT_FAILURE;
 	}
 
-	if (daemon(1, 1) < 0) {
+	if (daemon(0, 0) < 0) {
 		perror("daemon error");
 		return EXIT_FAILURE;
 	}

@@ -7,12 +7,41 @@
  *  Created on: 2014-8-29
  *  Author: lijianwei
  */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "mysql.h"
+
+static void mysql_fill_data(MYSQL_RES *res_ptr, result_data_t *result_data_ptr);
+
+//rtrim
+static char *strtrimr(char *pstr)
+{
+	int i;
+	i = strlen(pstr) - 1;
+	while((i >=0) && isspace(pstr[i])){
+		pstr[i--] = '\0';
+	}
+	return pstr;
+}
+
+//ltrim
+static char *strtriml(char *pstr)
+{
+	int i=0,j;
+	j = strlen(pstr) - 1;
+	while(isspace(pstr[i]) && (i <= j))
+		i++;
+	if(0 < i)
+		strcpy(pstr, &pstr[i]);
+	return pstr;
+}
+
+//trim
+static char *strtrim(char *pstr)
+{
+	char *p;
+	p = strtrimr(pstr);
+	return strtriml(p);
+}
+
 
 static const char *  mysql_error_with_if(MYSQL *conn_ptr)
 {
@@ -23,7 +52,7 @@ static const char *  mysql_error_with_if(MYSQL *conn_ptr)
 	}
 }
 
-inline void  mysql_connection_info_init(mysql_connect_info_t *mysql_connection_info_ptr)
+void  mysql_connection_info_init(mysql_connect_info_t *mysql_connection_info_ptr)
 {
 	mysql_connection_info_ptr->host = "127.0.0.1";
 	mysql_connection_info_ptr->port = 3306;
@@ -43,13 +72,15 @@ inline void  mysql_connection_info_init(mysql_connect_info_t *mysql_connection_i
  * @param mysql_connect_info_t *mysql_connect_info_ptr
  * @return  0 表示成功  -1表示失败
  */
-int mysql_connect(MYSQL *conn_ptr, mysql_connect_info_t *mysql_connect_info_ptr)
+int mysql_user_connect(MYSQL *conn_ptr, mysql_connect_info_t *mysql_connect_info_ptr)
 {
 	int retCode = -1;
 
 	conn_ptr = mysql_init(conn_ptr);
 	if (conn_ptr == NULL) {
-		log("mysql_init error");
+#ifdef DEBUG
+		printf("mysql_init error\n");
+#endif
 		return -1;
 	}
 
@@ -71,13 +102,17 @@ int mysql_connect(MYSQL *conn_ptr, mysql_connect_info_t *mysql_connect_info_ptr)
 #endif
 
 	if (conn_ptr == NULL) {
-		log("mysql_real_connect error:%s", mysql_error_with_if(conn_ptr));
+#ifdef DEBUG
+		printf("mysql_real_connect error:%s", mysql_error_with_if(conn_ptr));
+#endif
 		return -1;
 	}
 
 	retCode = mysql_set_character_set(conn_ptr, "utf8");
 	if (retCode != 0) {
-		log("mysql_set_charset_name error:%s", mysql_error_with_if(conn_ptr));
+#ifdef DEBUG
+		printf("mysql_set_charset_name error:%s", mysql_error_with_if(conn_ptr));
+#endif
 	}
 
 
@@ -112,7 +147,9 @@ int mysql_execute(MYSQL *conn_ptr, char *sql, unsigned long *result)
 		}
 		return 0;
 	} else {
-		log("mysql_execute error:%d, %s", mysql_errno(conn_ptr), mysql_error_with_if(conn_ptr));
+#ifdef	DEBUG
+		printf("mysql_execute error:%d, %s", mysql_errno(conn_ptr), mysql_error_with_if(conn_ptr));
+#endif
 		return -1;
 	}
 }
@@ -145,9 +182,14 @@ int mysql_select(MYSQL *conn_ptr, char *sql, result_data_t *result_data_ptr)
 		if (res_ptr == NULL) {
 			//没有错误
 			if (mysql_errno(conn_ptr) == 0) {
-				log("%s", "mysql_store_result empty");
+#ifdef DEBUG
+				printf("%s", "mysql_store_result empty");
+#endif
+
 			} else {
-				log("mysql_store_result_error:%s", mysql_error_with_if(conn_ptr));
+#ifdef DEBUG
+				printf("mysql_store_result_error:%s", mysql_error_with_if(conn_ptr));
+#endif
 			}
 			return -1;
 		} else {
@@ -160,7 +202,9 @@ int mysql_select(MYSQL *conn_ptr, char *sql, result_data_t *result_data_ptr)
 		return 0;
 
 	} else {
-		log("mysql_select error:%s", mysql_error_with_if(conn_ptr));
+#ifdef DEBUG
+		printf("mysql_select error:%s", mysql_error_with_if(conn_ptr));
+#endif
 		return -1;
 	}
 }
@@ -291,7 +335,7 @@ char *cap_mysql_escape_string(MYSQL *conn_ptr, char *from, unsigned long length)
 	return to;
 }
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 

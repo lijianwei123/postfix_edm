@@ -10,6 +10,9 @@
 
 #include "imconn.h"
 
+extern char *serverIp;
+extern char *serverPort;
+
 class cClientConn : public CImConn
 {
 public:
@@ -25,12 +28,15 @@ public:
 
 	virtual void HandlePdu(CImPdu *pdu);
 private:
-	int cClientConn::_HandleServerCommand(CImPduServerCommand *pdu);
-	int cClientConn::_HandleServerAdjustRate(CImPduAdjustRate *pdu);
+	int _HandleServerCommand(CImPduServerCommand *pdu);
+	int _HandleServerAdjustRate(CImPduAdjustRate *pdu);
+	int _HandleServerResponse(CImPduResponse *pdu);
+	int _HandleServerStatusInfo(CImPduServerStatusInfo *pPdu);
 private:
 	bool m_bOpen;
 };
 
+void connect_server();
 void init_client_conn();
 
 #endif /* CLIENTCONN_H_ */

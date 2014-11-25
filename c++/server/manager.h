@@ -11,6 +11,10 @@
 #include "util.h"
 #include "monitoring.h"
 
+extern mysql_connect_info_t  mysql_connect_info;
+extern int changeProcessName;
+extern int isDaemon;
+
 #define COMMAND_TO_ENUM(command) CID_COMMAND_##command
 
 class cManager : public CRefObject
@@ -31,14 +35,23 @@ public:
 	//调整发送速率  delay 延迟   multi 并发数
 	int adjustSendRate(uint16_t delay, uint16_t multi);
 
+
+	uint16_t GetStatus() { return _status; }
+	uint16_t GetDelay() { return _delay; }
+	uint16_t GetMulti() { return _multi; }
+
+	cMonitoring *GetMonitor() { return _Monitor; }
+
 public:
 	static cManager *instance;
 
 private:
 	int _cleanHistoryData();
-	int64_t _getTotalNum();
+	uint64_t _getTotalNum();
 private:
 	uint16_t _status;
+	uint16_t _delay;
+	uint16_t _multi;
 	cMonitoring *_Monitor;
 };
 

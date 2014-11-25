@@ -127,6 +127,12 @@ int netlib_register_timer(callback_t callback, void* user_data, uint64_t interva
 	return 0;
 }
 
+int netlib_delete_timer(callback_t callback, void* user_data)
+{
+	CEventDispatch::Instance()->RemoveTimer(callback, user_data);
+	return 0;
+}
+
 
 void netlib_eventloop()
 {

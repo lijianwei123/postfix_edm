@@ -23,8 +23,20 @@ public:
 	virtual void HandlePdu(CImPdu* pPdu);
 	virtual void OnTimer(uint64_t curr_tick);
 
+	uint16_t getClientType() { return client_type;}
+	void setClientType(uint16_t type) { client_type = type;}
+
 private:
-	int _HandleClientTestData(CImPduClientTestData* pdu);
+	int _HandleHeartBeat(CImPduHeartbeat *pdu);
+	int _HandleClientData(CImPduClientData* pdu);
+	int _HandleServerCommand(CImPduServerCommand* pdu);
+	int _HandleServerAdjustRate(CImPduAdjustRate *pPdu);
+	int _HandleRegClientType(CImPduRegClientType *pPdu);
+	int _HandleServerStatusInfo(CImPduServerStatusInfo *pPdu);
+	int _HandleAllClientStatusInfo(CImPduAllClientStatusInfo *pPdu);
+
+private:
+	uint16_t client_type;
 };
 
 void init_server_conn();

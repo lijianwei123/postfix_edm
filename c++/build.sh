@@ -20,6 +20,27 @@ build() {
 	if test -z "$is_install"; then
 		yum -y install mysql-devel
 	fi
+
+	#check libjson.a
+	#see http://wiki.hourui.de/c_cpp/json_cpp
+	if [ ! -f "./base/json/libjson.a" ]; then
+		pwd=$(pwd)
+		cd ../jsoncpp
+		tar xvzf jsoncpp-src-0.5.0.tar.gz
+		tar xvzf scons-2.2.0.tar.gz
+		export SCONS=$(pwd)/scons-2.2.0
+		export SCONS_LIB_DIR=$SCONS/engine
+		cd jsoncpp-src-0.5.0
+		python $SCONS/script/scons platform=linux-gcc
+
+		cd libs
+		gcc_ver=$(ls)
+		cd $gcc_ver
+		static_lib_name=$(find ./ -name "lib*.a")
+
+		cp $static_lib_name $pwd/base/json/libjson.a
+		cd $pwd
+	fi
 	
 	cd base
 	make
