@@ -26,7 +26,7 @@ static void client_conn_timer_callback(void* callback_data, uint8_t msg, uint32_
 }
 
 //向服务端发送数据包
-static int send_server_pdu(CImPdu *pdu)
+int send_server_pdu(CImPdu *pdu)
 {
 	for (ConnMap_t::iterator it = g_serv_conn_map.begin(); it != g_serv_conn_map.end(); ++it) {
 		cClientConn *pConn = (cClientConn *)it->second;
@@ -116,6 +116,8 @@ void cClientConn::OnTimer(uint64_t curr_tick)
 
 		client_status_ptr->ip = strdup(getLocalIp());
 		client_status_ptr->emailFromAddr = strdup(emailFromAddr);
+		client_status_ptr->havePushNum = shm_ptr->havePushNum;
+		client_status_ptr->mailqNum = cWorker::instance->GetMailqNum();
 
 		CImPduHeartbeat pdu(client_status_ptr);
 		SendPdu(&pdu);

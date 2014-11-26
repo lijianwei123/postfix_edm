@@ -23,6 +23,7 @@ cManager::cManager()
 	_delay = 0;
 	_multi = 1;
 	_Monitor = cMonitoring::instance;
+	_loadBlance = cLoadBalance::instance;
 }
 
 cManager::~cManager()
@@ -37,6 +38,13 @@ int cManager::start()
 
 	//清除旧的一些数据
 	//_cleanHistoryData();
+
+	//获取client 配置
+	_GetAllClientConfig();
+
+	//组内的数据  分配到具体的client中
+	_loadBlance->blanceAllGroupData();
+
 
 	//获取总量
 	totalNum = _getTotalNum();
@@ -154,3 +162,10 @@ uint64_t cManager::_getTotalNum()
 	}
 }
 
+/**
+ * 填充  _client_config_maps
+ */
+int cManager::_GetAllClientConfig()
+{
+
+}

@@ -265,5 +265,29 @@ CImPduRegClientType::CImPduRegClientType(uint16_t client_type)
 	WriteHeader();
 }
 
+//=====================================================================
+
+//解包
+CImPduClientDone::CImPduClientDone(uchar_t* buf, uint32_t len)
+{
+	ReadPduHeader(buf, IM_PDU_HEADER_LEN, &m_pdu_header);
+	CByteStream is(buf + IM_PDU_HEADER_LEN, len - IM_PDU_HEADER_LEN);
+
+
+	PARSE_PACKET_ASSERT
+}
+
+//组包
+CImPduClientDone::CImPduClientDone(uint16_t client_type)
+{
+	m_pdu_header.command_id = CID_OTHER_REG_CLIENT_TYPE;
+
+	CByteStream os(&m_buf, IM_PDU_HEADER_LEN);
+	m_buf.Write(NULL, IM_PDU_HEADER_LEN);
+
+
+	WriteHeader();
+}
+
 //====================================SID_OTHER  END=====================================================================
 

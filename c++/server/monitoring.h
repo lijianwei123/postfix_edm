@@ -28,6 +28,10 @@ public:
 	int UpdateClientStatus(shared_ptr<client_status_info> client_status_ptr);
 	bool removeClientStauts(const char *ip);
 
+	//获取待发送邮件数量
+	int64_t getSentEmailNum();
+
+
 
 public:
 		static cMonitoring *instance;
@@ -35,11 +39,10 @@ private:
 	//总的发送量
 	uint64_t _totalNum;
 
-	//已发送数量
-	uint64_t _sendedNum;
-
+	//在线客户端
 	uint16_t _online_client_num;
 
+	//客户端状态
 	client_status_map_t _client_status_maps;
 };
 

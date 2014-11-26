@@ -54,6 +54,7 @@ typedef struct {
 	uint16_t status;
 	uint16_t multi;
 	uint16_t delay;
+	uint64_t havePushNum;
 
 	//条件锁
 	struct CThreadLock childLock;
@@ -87,6 +88,9 @@ public:
 	void run();
 	void done();
 	void checkThreadAlive();
+	//获取待发队列数量
+	int64_t GetMailqNum();
+
 
 	void setStatus(uint16_t status);
 	uint16_t getStatus() { return _status;}

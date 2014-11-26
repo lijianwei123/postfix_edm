@@ -42,6 +42,7 @@ enum {
 	CID_OTHER_HEARTBEAT			= 1, //心跳
 	CID_OTHER_RESPONSE			= 2, //返回响应
 	CID_OTHER_REG_CLIENT_TYPE 	= 3, //注册客户端类型   如PHP管理端   c++客户端
+	CID_OTHER_CLIENT_DONE 		= 4, //client 完成作业了(没有新的数据)
 };
 
 
@@ -56,45 +57,15 @@ enum {
 
 #define DLL_MODIFIER
 
+//客户端配置
 typedef struct {
-	uint32_t 	from_user_id;
-	uint32_t	from_name_len;
-	char*	 	from_name;
-	uint32_t	from_nick_name_len;
-	char*		from_nick_name;
-	uint32_t	from_avatar_len;
-	char*		from_avatar_url;
+	char *group;
+	char *ip;
+	char *emailFromAddr;
+} client_config_t;
 
-	uint32_t 	create_time;
-	uint8_t	 	msg_type;
-	uint32_t 	msg_len;
-	uchar_t* 	msg_data;
-} server_msg_t;
+typedef map<string, shared_ptr<client_config_t> > client_config_map_t;
 
-typedef struct {
-	uint32_t from_user_id;
-	uint32_t unread_msg_cnt;
-} UserUnreadMsgCnt_t;
-
-typedef struct ip_addr_t{
-    uint32_t ip_len;
-    char*    ip;
-    uint16_t port;
-} ip_addr;
-
-typedef struct svr_ip_addr_t{
-	std::string ip;
-	uint16_t port;
-	
-	svr_ip_addr_t() {
-		port = 0;
-	}
-
-	svr_ip_addr_t (const char* addr, uint16_t p) {
-		ip = addr;
-		port = p;
-	}
-}svr_ip_addr;
 
 //////////////////////////////
 typedef struct {

@@ -27,12 +27,20 @@
 #define IM_PDU_TYPE_HEARTBEAT						2 << 8 | 1
 #define IM_PDU_TYPE_RESPONSE						2 << 8 | 2
 #define IM_PDU_TYPE_REG_CLIENT_TYPE					2 << 8 | 3
+#define IM_PDU_TYPE_CLIENT_DOEN						2 << 8 | 4
 
 
 typedef struct client_status_info
 {
 	char *ip;
 	char *emailFromAddr;
+
+	//已经推送
+	int64_t	 havePushNum;
+	//待发队列中数据
+	int64_t  mailqNum;
+
+
 
 	char *json_str;
 
@@ -45,6 +53,8 @@ typedef struct client_status_info
 		root = cJSON_CreateObject();
 		cJSON_AddStringToObject(root, "ip", ip);
 		cJSON_AddStringToObject(root, "emailFromAddr", emailFromAddr);
+		cJSON_AddNumberToObject(root, "havePushNum", havePushNum);
+		cJSON_AddNumberToObject(root, "mailqNum", mailqNum);
 
 		return root;
 	}
@@ -58,6 +68,9 @@ typedef struct client_status_info
 		root = cJSON_CreateObject();
 		cJSON_AddStringToObject(root, "ip", ip);
 		cJSON_AddStringToObject(root, "emailFromAddr", emailFromAddr);
+		cJSON_AddNumberToObject(root, "havePushNum", havePushNum);
+		cJSON_AddNumberToObject(root, "mailqNum", mailqNum);
+
 
 		json_str = cJSON_Print(root);
 		cJSON_Delete(root);
@@ -78,6 +91,8 @@ typedef struct client_status_info
 		if (reader.parse(json_string, value)) {
 			ip= strdup(value["ip"].asString().c_str());
 			emailFromAddr = strdup(value["emailFromAddr"].asString().c_str());
+			havePushNum  = static_cast<uint64_t>(value["havePushNum"].asDouble());
+			mailqNum  = static_cast<uint64_t>(value["mailqNum"].asDouble());
 		}
 
 		return 0;
@@ -88,6 +103,8 @@ typedef struct client_status_info
 		json_str = NULL;
 		ip = NULL;
 		emailFromAddr = NULL;
+		havePushNum = 0;
+		mailqNum = 0;
 	}
 
 	~client_status_info()
@@ -316,6 +333,20 @@ public:
 
 private:
 	uint16_t client_type;
+};
+
+
+//client 完成作业了
+class DLL_MODIFIER CImPduClientDone : public CImPdu
+{
+public:
+	CImPduClientDone(uchar_t* buf, uint32_t len);
+	CImPduClientDone(uint16_t client_type);
+	virtual ~CImPduClientDone() {}
+
+	virtual uint16_t GetPduType() { return IM_PDU_TYPE_CLIENT_DOEN; }
+
+
 };
 
 //====================================SID_OTHER  END=========================================================================

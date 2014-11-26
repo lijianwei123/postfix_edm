@@ -148,6 +148,10 @@ void cServConn::HandlePdu(CImPdu *pPdu)
 	case IM_PDU_TYPE_ALL_CLIENT_STATUS_INFO:
 			_HandleAllClientStatusInfo((CImPduAllClientStatusInfo *)pPdu);
 		break;
+	//有一个小弟干完活
+	case IM_PDU_TYPE_CLIENT_DOEN:
+			_HandleClientDone((CImPduClientDone *)pPdu);
+		break;
 	default:
 		log("no such pdu_type: %u\n", pPdu->GetPduType());
 		break;
@@ -283,6 +287,18 @@ int cServConn::_HandleAllClientStatusInfo(CImPduAllClientStatusInfo *pPdu)
 	SendPdu(&pdu);
 
 	free(json_data);
+
+	return 0;
+}
+
+int cServConn::_HandleClientDone(CImPduClientDone *pPdu)
+{
+	int64_t remainSentNum = cManager::instance->GetMonitor()->getSentEmailNum();
+
+	//如果都没有数据了，就先暂停吧
+	if (remainSentNum == 0) {
+		cManager::instance->pause();
+	}
 
 	return 0;
 }

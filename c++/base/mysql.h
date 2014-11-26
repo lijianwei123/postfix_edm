@@ -20,6 +20,7 @@ extern "C" {
 
 #include <mysql/mysql.h>
 #include "cJSON.h"
+#include <stdint.h>
 
 
 typedef struct{

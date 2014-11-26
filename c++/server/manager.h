@@ -45,14 +45,21 @@ public:
 public:
 	static cManager *instance;
 
+	client_config_map_t clientConfigMaps;
+
 private:
 	int _cleanHistoryData();
 	uint64_t _getTotalNum();
+	int _GetAllClientConfig();
 private:
 	uint16_t _status;
 	uint16_t _delay;
 	uint16_t _multi;
+
+	cLoadBalance *_loadBlance;
 	cMonitoring *_Monitor;
+
+
 };
 
 

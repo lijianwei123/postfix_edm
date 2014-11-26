@@ -70,6 +70,9 @@ void cWorker::run()
 void cWorker::done()
 {
 	//给服务端发送个消息
+	CImPduClientDone  pdu;
+	send_server_pdu(&pdu);
+
 }
 
 void cWorker::checkThreadAlive()
@@ -77,6 +80,35 @@ void cWorker::checkThreadAlive()
 	if (!CThread::checkThreadAlive(worker_thread_id)) {
 		_createThread();
 	}
+}
+
+int64_t cWorker::GetMailqNum()
+{
+	int ret = -1;
+	long byteNum = 0;
+	long mailqNum = 0;
+
+
+	FILE *mailFp = NULL;
+	const char *command = "/usr/bin/mailq 2>/dev/null |tail -n 1";
+	char lastLineStr[1024] = {0};
+	mailFp = popen(command, "r");
+	if (mailFp == NULL) {
+		return 0;
+	}
+	fgets(lastLineStr, 1024, mailFp);
+	pclose(mailFp);
+
+	if (strstr(lastLineStr, "empty")) {
+		return 0;
+	}
+
+	ret = sscanf(lastLineStr, "-- %ld Kbytes in %ld Requests.", &byteNum, &mailqNum);
+	if (ret == -1) {
+		return 0;
+	}
+
+	return mailqNum;
 }
 
 
@@ -198,6 +230,7 @@ void cWorkerThread::_init_shm()
 	shm_ptr->status = cWorker::instance->getStatus();
 	shm_ptr->multi = cWorker::instance->getMulti();
 	shm_ptr->delay = cWorker::instance->getDelay();
+	shm_ptr->havePushNum = 0;
 
 	//初始化锁
 	create_thread_lock(&shm_ptr->childLock);
@@ -357,6 +390,7 @@ void cChildProcess::OnChildRun()
 	if (changeProcessName) prename_setproctitle("%s", "postfix_edm_client child");
 	//kill -s USR1  pid  或者  kill -n 12  pid  或者 kill -12 pid   或者   kill -USR1 pid  参看 kill
 	signal(SIGUSR1, sigUsr1Handler);
+	signal(SIGCHLD, SIG_DFL);
 
 	//工作子进程
 	//INIT_RDONLY_SHMAT
@@ -374,6 +408,7 @@ void cChildProcess::OnChildRun()
 
 			shm_ptr->childLock.Lock();
 			pullSentInfoFromMysql();
+			shm_ptr->havePushNum += send_mail_queue.size();
 			shm_ptr->childLock.Unlock();
 
 			if (!send_mail_queue.empty()) {

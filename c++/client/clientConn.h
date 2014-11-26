@@ -36,6 +36,7 @@ private:
 	bool m_bOpen;
 };
 
+int send_server_pdu(CImPdu *pdu);
 void connect_server();
 void init_client_conn();
 

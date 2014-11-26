@@ -209,7 +209,6 @@ int mysql_select(MYSQL *conn_ptr, char *sql, result_data_t *result_data_ptr)
 	}
 }
 
-
 //释放result_data_t *result_data_ptr
 void free_result_data(result_data_t *result_data_ptr)
 {

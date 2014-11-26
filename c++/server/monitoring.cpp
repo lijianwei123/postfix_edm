@@ -48,3 +48,37 @@ bool cMonitoring::removeClientStauts(const char *ip)
 }
 
 
+int64_t cMonitoring::getSentEmailNum()
+{
+	MYSQL conn;
+	result_data_t result_data;
+	mysql_field_value_t *pointer = NULL;
+
+	int retCode = -1;
+	char select_sql[200] = {0};
+
+	retCode = mysql_user_connect(&conn, &mysql_connect_info);
+	assert(retCode == 0);
+
+	retCode = mysql_select_db(&conn, mysql_connect_info.db);
+	assert(retCode == 0);
+
+	snprintf(select_sql, sizeof(select_sql), "SELECT count(1) as sentNum FROM `send_email` where `status` = 1 limit 1");
+	retCode = mysql_select(&conn, select_sql, &result_data);
+
+	#ifdef DEBUG
+		printf("rows:%d, cols:%d\n", result_data.rows, result_data.columns);
+	#endif
+
+	mysql_close(&conn);
+
+	if (result_data.rows > 0) {
+		pointer = *(result_data.data);
+		return static_cast<uint64_t>(atoi(pointer->next->fieldValue));
+	} else {
+		return 0;
+	}
+
+}
+
+

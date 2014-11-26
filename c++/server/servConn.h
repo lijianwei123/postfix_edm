@@ -34,6 +34,7 @@ private:
 	int _HandleRegClientType(CImPduRegClientType *pPdu);
 	int _HandleServerStatusInfo(CImPduServerStatusInfo *pPdu);
 	int _HandleAllClientStatusInfo(CImPduAllClientStatusInfo *pPdu);
+	int _HandleClientDone(CImPduClientDone *pPdu);
 
 private:
 	uint16_t client_type;

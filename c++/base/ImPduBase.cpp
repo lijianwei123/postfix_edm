@@ -162,6 +162,9 @@ CImPdu* CImPdu::ReadPduOther(uint16_t command_id, uchar_t* pdu_buf, uint32_t pdu
 	case CID_OTHER_REG_CLIENT_TYPE:
 		pPdu = new CImPduRegClientType(pdu_buf, pdu_len);
 		break;
+	case CID_OTHER_CLIENT_DONE:
+		pPdu = new CImPduClientDone(pdu_buf, pdu_len);
+		break;
 	default:
 		throw CPduException(SID_OTHER, command_id, ERROR_CODE_WRONG_COMMAND_ID, "wrong packet type");
 		return NULL;
