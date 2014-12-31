@@ -8,9 +8,9 @@ cd mongo-c-driver
 make
 make install
 cd ..
-echo "PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/:\$PKG_CONFIG_PATH" >> /etc/profile
-echo "LD_LIBRARY_PATH=/usr/local/lib:\$LD_LIBRARY_PATH" >> /etc/profile
-source /etc/proflie
+echo "export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/:\$PKG_CONFIG_PATH" >> /etc/profile
+echo "export LD_LIBRARY_PATH=/usr/local/lib:\$LD_LIBRARY_PATH" >> /etc/profile
+source /etc/profile
 echo "install mongodb c driver end......"
 
 echo "delete old postfix"
