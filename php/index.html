@@ -1,0 +1,119 @@
+<{extends file="layout/main.html"}>
+<{block name="title"}>
+    <title>edm管理</title>
+<{/block}>
+<{block name="body"}>
+    <div class="container">
+            <div class="page-header">
+               <h1>edm管理</h1>
+            </div>
+
+
+             <ol class="breadcrumb">
+                <li><a href="<{$this->createUrl('postfix/edm')}>">edm管理</a></li>
+             </ol>
+
+             <h2><small>服务器状态：</small><span id="serverStatus" value="<{$commandInfos[$status]['value']}>"><{$commandInfos[$status]['human']}></span></h2>
+         
+           
+              <ul class="list-group">
+                  <li class="list-group-item">
+                     <a href="javascript:;" class="btn btn-success btn-lg active" role="button">管理</a>
+                          <{foreach from=$commandInfos key=key item=commandInfo}>
+                          <a href="javascript:void(0);" name="<{$commandInfo['name']}>" value="<{$commandInfo['value']}>" class="btn btn-info btn-small active serverCommand" style="margin-left:20px;" role="button" data-post="<{$commandInfo['url']}>"><{$commandInfo['human']}></a>
+                          <{/foreach}>
+                  </li>
+  
+              </ul>
+        </div>
+        <div class="container">
+          <div class="panel panel-default">
+              <div class="panel-heading">
+                  <h3 class="panel-title">总的概况</h3>
+              </div>
+              <div class="panel-body chat-body">
+                  <div class="status-content">
+                      <ul class="list-group chat-list">
+                          <li class="list-group-item">总的发送量:
+                              <{$totalNum}>
+                          </li>
+                          <li class="list-group-item">在线机器数量:
+                              <{$online_client_num}>
+                          </li>
+                      </ul>
+                  </div>
+              </div>
+          </div>
+
+          <div class="panel all-client-group">
+            <{*等待孩子们*}>
+          </div>
+        </div>
+
+        </div>
+
+        <script id="adjust-template" type="text/html">
+            <div class="container" style="width:600px;overflow:scroll">
+                <div class="row">
+                    <div class="col-md-12">
+
+                        <form role="form" id="adjust-form">
+
+                            <div class="form-group">
+                                <label for="delay">延迟</label>
+                                <input name="delay" type="text" class="form-control" id="delay" value="<{$delay|default:0}>" placeholder="单位s">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="multi">并发</label>
+                              <input name="multi" type="text" class="form-control" id="multi" value="<{$multi|default:1}>" placeholder="并发">
+                            </div>
+
+                            <button type="button" id="submit" class="btn btn-default adjust-btn" data-post="<{$this->createAbsoluteUrl('postfix/edm/adjustrate')}>">Submit</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </script>
+
+        <script id="all-client-status-template" type="text/html">
+          <div class="row">
+            <%if (!all_client_status) {%>
+              <div class="col-md-12">
+                  <h3>孩子还没有出生</h3>
+              </div>
+            <%} else {%>
+              <%for(var ip in all_client_status){%>
+                <div class="col-md-3">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title"><%=ip%></h3>
+                        </div>
+                        <div class="panel-body chat-body">
+                            <div class="status-content">
+                                <ul class="list-group chat-list">
+                                    <li class="list-group-item"><%=all_client_status[ip].emailFromAddr%></li>
+                                    <li class="list-group-item">已发送数量：</li>
+                                    <li class="list-group-item">队列中未发送数量：</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+               <%}%>
+            <%}%>
+
+            </div>
+        </script>
+
+
+
+<{/block}>
+
+<{block name="footer_script"}>
+        <script type="text/javascript">
+            L.run('app/postfix/edm', function(edm) {
+            	 edm.init();
+            });
+        </script>
+<{/block}>
